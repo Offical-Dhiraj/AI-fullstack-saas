@@ -1,46 +1,84 @@
-import { useUser } from '@clerk/react'
 import React, { useEffect, useState } from 'react'
-import { dummyPublishedCreationData } from '../assets/assets'
-import { Heart } from 'lucide-react'
+import axios from 'axios'
+
+axios.defaults.baseURL = import.meta.env.VITE_BASE_URL
 
 const Community = () => {
 
   const [creations, setCreations] = useState([])
-  const { user } = useUser()
+  const [loading, setLoading] = useState(true)
 
   const fetchCreations = async () => {
-    setCreations(dummyPublishedCreationData)
+
+    try {
+
+      const { data } = await axios.get(
+        '/api/user/get-published-creations'
+      )
+
+      if (data.success) {
+        setCreations(data.message)
+      }
+
+    } catch (error) {
+
+      console.log(error)
+
+    } finally {
+
+      setLoading(false)
+
+    }
   }
 
   useEffect(() => {
-    if (user) {
 
-      fetchCreations()
-    }
-  }, [user])
+    fetchCreations()
+
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        Loading...
+      </div>
+    )
+  }
+
   return (
-    <div className='flex-1 h-full flex-col gap-4 p-6 '>
-      Creations
-      <div className='bg-white h-full rounded-xl overflow-y-scroll'>
 
-        {
-          creations.map((creation, index) => (
-            <div key={index} className='relative group inline-block pl-3 pt-3 w-full sm:max-w-1/2 lg:max-w-1/3'>
-              <img src={creation.content} alt="" className='w-full h-full object-center rounded-lg' />
+    <div className="p-6 md:p-10">
 
-              <div className='absolute bottom-0 top-0 right-0 left-3 flex gap-2
-              items-end justify-end group-hover:justify-between p-3 group-hover:bg-gradient-to-b from-transparent
-              to-black/80 text-white rounded-lh'>
-                <p className='text-sm hidden group-hover:block'>{creation.prompt}</p>
-                <div className='flex gap-1 items-center'>
-                  <p>{creation.likes.length}</p>
-                  <Heart className={`min-w-5 h-5 hover:scale-110 cursor-pointer ${creation.likes.includes(user.id) ? 'fill-red-500 text-red-600' : 'text-white'}`} />
-                </div>
+      <h1 className="text-3xl font-bold mb-8">
+        Community Creations
+      </h1>
 
-              </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        {creations.map((creation) => (
+
+          <div
+            key={creation.id}
+            className="bg-white rounded-2xl overflow-hidden shadow-md"
+          >
+
+            <img
+              src={creation.content}
+              alt="generated"
+              className="w-full h-64 object-cover"
+            />
+
+            <div className="p-4">
+
+              <p className="text-gray-700">
+                {creation.prompt}
+              </p>
+
             </div>
-          ))
-        }
+
+          </div>
+
+        ))}
 
       </div>
 

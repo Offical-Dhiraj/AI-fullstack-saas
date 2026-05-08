@@ -1,16 +1,51 @@
 import { FileText, Sparkles } from 'lucide-react'
 import React, { useState } from 'react'
+import axios from 'axios'
+import { useAuth } from '@clerk/react';
+import toast from 'react-hot-toast';
+import Markdown from 'react-markdown';
+
+
+axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
+
 
 const ReviewResume = () => {
 
   const [input, setInput] = useState('')
-  
-    const onSubmitHandler = async (e) => {
-      e.preventDefault()
+  const [loading, setLoading] = useState(false)
+  const [content, setContent] = useState('')
+
+  const { getToken } = useAuth()
+
+
+  const onSubmitHandler = async (e) => {
+    e.preventDefault()
+
+    try {
+      setLoading(true)
+
+      const formData = new FormData()
+      formData.append('resume', input)
+
+
+      const { data } = await axios.post('/api/ai/resume-review', formData,
+        { headers: { Authorization: `Bearer ${await getToken()}` } }
+      )
+
+      if (data.success) {
+        setContent(data.content)
+      } else {
+        toast.error(data.message)
+      }
+
+    } catch (error) {
+      toast.error(error.message)
+
     }
-  
+  }
+
   return (
- <div className='h-full overflow-y-scroll p-6 flex flex-col md:flex-row gap-6 text-slate-700'>
+    <div className='h-full overflow-y-scroll p-6 flex flex-col md:flex-row gap-6 text-slate-700'>
 
       {/* LEFT */}
       <form
@@ -34,12 +69,20 @@ const ReviewResume = () => {
 
         <p className='text-sm text-gray-500 font-light mt-1'>Support PDF Resume only.</p>
 
-        <button
+        <button disabled={loading}
           type="submit"
           className='w-full flex justify-center items-center gap-2 bg-gradient-to-r from-[#C341F6] to-[#8E37EB]
            text-white px-4 py-2 mt-6 text-sm rounded-lg cursor-pointer'
         >
-          <FileText className='w-5' />
+
+
+          {
+            loading ? <span className='w-4 h-4 my-1 rounded-full border-2 border-t-transparent animate-spin'></span>
+              : <FileText className='w-5' />
+
+
+          }
+
           Resume Review
         </button>
       </form>
@@ -53,16 +96,29 @@ const ReviewResume = () => {
           <h1 className='text-xl font-semibold'>Analysis Results</h1>
         </div>
 
-        <div className='flex-1 flex justify-center items-center'>
-          <div className='text-sm flex flex-col items-center gap-5 text-gray-400'>
-            <FileText className='w-9 h-9' />
-            <p>Upload your resume and click "Resume Review" to get Started</p>
-          </div>
-        </div>
+        {
+          !content ? (
+            <div className='flex-1 flex justify-center items-center'>
+              <div className='text-sm flex flex-col items-center gap-5 text-gray-400'>
+                <FileText className='w-9 h-9' />
+                <p>Upload your resume and click "Resume Review" to get Started</p>
+              </div>
+            </div>
+          ) : (
+            <div className='mt-3 h-full overflow-y-scroll text-sm text-slate-600'>
+              <div>
+                <Markdown className="reset-tw">{content}</Markdown>
+              </div>
+
+            </div>
+          )
+        }
+
+
       </div>
 
-    </div>
-      )
+    </div >
+  )
 }
 
 export default ReviewResume
